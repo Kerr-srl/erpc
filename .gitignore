@@ -104,3 +104,6 @@ tags
 
 format-files-to-commit.rb
 language\.settings\.xml
+
+# Conventional CMake build directory
+build/
