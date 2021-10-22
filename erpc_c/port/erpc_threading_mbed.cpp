@@ -12,10 +12,10 @@
 
 #include "erpc_threading.h"
 
+#if ERPC_THREADS_IS(MBED)
+
 #include "platform/CriticalSectionLock.h"
 #include "platform/mbed_assert.h"
-
-#if ERPC_THREADS_IS(MBED)
 
 namespace erpc {
 

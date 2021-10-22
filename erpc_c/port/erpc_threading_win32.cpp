@@ -10,6 +10,8 @@
 
 #include "erpc_threading.h"
 
+#if ERPC_THREADS_IS(WIN32)
+
 #include <errno.h>
 #include <process.h>
 #include <time.h>
@@ -207,6 +209,8 @@ int Semaphore::getCount(void) const
 {
     return m_count;
 }
+
+#endif /* ERPC_THREADS_IS(WIN32) */
 
 ////////////////////////////////////////////////////////////////////////////////
 // EOF

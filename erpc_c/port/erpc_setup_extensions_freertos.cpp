@@ -11,6 +11,8 @@
 #include "erpc_setup_extensions.h"
 #include "erpc_threading.h"
 
+#if ERPC_THREADS_IS(FREERTOS)
+
 #include <cassert>
 
 using namespace erpc;
@@ -109,3 +111,5 @@ void erpc_reset_in_progress_state_default(void)
            "If you want use default pre cb action, do not forget call erpc_init_call_progress_detection_default.");
     (void)xTimerStop(s_erpc_call_timer_cb, 0);
 }
+
+#endif /* ERPC_THREADS_IS(FREERTOS) */
