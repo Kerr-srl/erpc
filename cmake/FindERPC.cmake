@@ -214,9 +214,9 @@ targets, as documented in ERPCAddIDLTarget.
 
 Signature::
 
-  _erpc_add_c_targets(<IDL_FILE> <TARGET_PREFIX> <OUTPUT_DIR> <GROUPS>)
+  _erpc_add_c_targets(<IDL_FILE> <TARGET_PREFIX> <OUTPUT_DIR> <GROUPS> <SERVER_DEPENDS>)
 #]=======================================================================]
-function(_ERPC_ADD_C_TARGETS _IDF_FILE _TARGET_PREFIX _OUTPUT_DIR _GROUPS)
+function(_ERPC_ADD_C_TARGETS _IDF_FILE _TARGET_PREFIX _OUTPUT_DIR _GROUPS _SERVER_DEPENDS)
   _erpc_get_c_outputs(${_IDL_FILE} ${_OUTPUT_DIR} "${_GROUPS}" SOURCES HEADERS)
 
   add_custom_command(OUTPUT ${SOURCES} ${HEADERS}
@@ -225,6 +225,8 @@ function(_ERPC_ADD_C_TARGETS _IDF_FILE _TARGET_PREFIX _OUTPUT_DIR _GROUPS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
     VERBATIM
     )
+
+  list(LENGTH _SERVER_DEPENDS SERVER_DEPENDS_LEN)
 
   set(SERVER_SOURCES ${SOURCES})
   list(FILTER SERVER_SOURCES INCLUDE REGEX "server.cpp")
@@ -235,6 +237,9 @@ function(_ERPC_ADD_C_TARGETS _IDF_FILE _TARGET_PREFIX _OUTPUT_DIR _GROUPS)
     ${SERVER_SOURCES}
     )
   target_link_libraries(${_TARGET_PREFIX}_server PUBLIC eRPC::lib)
+  if (SERVER_DEPENDS_LEN GREATER 0)
+    target_link_libraries(${_TARGET_PREFIX}_server PRIVATE "${_SERVER_DEPENDS}")
+  endif()
 
   set(CLIENT_SOURCES ${SOURCES})
   list(FILTER CLIENT_SOURCES INCLUDE REGEX "client.cpp")
@@ -258,6 +263,9 @@ function(_ERPC_ADD_C_TARGETS _IDF_FILE _TARGET_PREFIX _OUTPUT_DIR _GROUPS)
         ${GROUP_SERVER_SOURCES}
         )
       target_link_libraries(${_TARGET_PREFIX}_${GROUP}_server PUBLIC eRPC::lib)
+      if (SERVER_DEPENDS_LEN GREATER 0)
+        target_link_libraries(${_TARGET_PREFIX}_${GROUP}_server PRIVATE "${_SERVER_DEPENDS}")
+      endif()
 
       set(GROUP_CLIENT_SOURCES ${CLIENT_SOURCES})
       list(FILTER GROUP_CLIENT_SOURCES INCLUDE REGEX "${GROUP}_client.cpp")
@@ -287,6 +295,7 @@ erpc_add_idl_target(<IDL_FILE>
   [OUTPUT_DIR <dir>]
   [GROUPS <dir>]
   [LANGUAGES <lang> [lang...]]
+  [SERVER_DEPENDS <library target> [library targets...]]
   )
 
 The required parameters are:
@@ -307,6 +316,9 @@ placed. By default it's CMAKE_CURRENT_LIST_DIR.
 IDL files.
 - ``LANGUAGES`` (input): list of languages for which the stubs should be
 generated. Currently supports: `c` and `python`. By default it's `c`.
+- ``SERVER_DEPENDS`` (input): list of library targets that provide the
+  functions implementations of the services that are provided by the current
+  program.
 
 This function creates the following static library targets
 
@@ -321,7 +333,7 @@ If GROUPS is non-empty, static library targets with names:
 are created for each group.
 #]=======================================================================]
 function(ERPC_ADD_IDL_TARGET _IDL_FILE)
-  cmake_parse_arguments(PARSE_ARGV 1 "_FUNC_NAMED_PARAMETERERS" "" "OUTPUT_DIR;TARGET_PREFIX;SEARCH_PATH" "LANGUAGES;GROUPS")
+  cmake_parse_arguments(PARSE_ARGV 1 "_FUNC_NAMED_PARAMETERERS" "" "OUTPUT_DIR;TARGET_PREFIX;SEARCH_PATH" "LANGUAGES;GROUPS;SERVER_DEPENDS")
 
   if (NOT DEFINED _FUNC_NAMED_PARAMETERERS_TARGET_PREFIX)
     message(FATAL_ERROR "TARGET_PREFIX is required")
@@ -344,13 +356,18 @@ function(ERPC_ADD_IDL_TARGET _IDL_FILE)
     set(GROUPS ${_FUNC_NAMED_PARAMETERERS_GROUPS})
   endif()
 
+  set(SERVER_DEPENDS "")
+  if (_FUNC_NAMED_PARAMETERERS_SERVER_DEPENDS)
+    set(SERVER_DEPENDS ${_FUNC_NAMED_PARAMETERERS_SERVER_DEPENDS})
+  endif()
+
   set(LANGUAGES c)
   if (_FUNC_NAMED_PARAMETERERS_LANGUAGES)
     set(LANGUAGES "${_FUNC_NAMED_PARAMETERERS_LANGUAGES}")
   endif()
 
   if ("c" IN_LIST LANGUAGES)
-    _erpc_add_c_targets(${_IDL_FILE} ${TARGET_PREFIX} ${OUTPUT_DIR} "${GROUPS}")
+    _erpc_add_c_targets(${_IDL_FILE} ${TARGET_PREFIX} ${OUTPUT_DIR} "${GROUPS}" "${SERVER_DEPENDS}")
   endif()
   if ("python" IN_LIST LANGUAGES)
     add_custom_target(${TARGET_PREFIX}_python ALL
