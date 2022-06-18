@@ -331,6 +331,14 @@ If GROUPS is non-empty, static library targets with names:
 ``${TARGET_PREFIX}::${group}::client``
 
 are created for each group.
+
+If LANGUAGES contains python, then the custom target named
+``${TARGET_PREFIX}_python`` is created. This custom target is created with the
+``ALL`` option, so it is added to the default build target and it will be run
+every time. To force the generation of the Python eRPC modules when you're not
+using the default build target (e.g. you're doing ``make flash`` instead of
+``make``), you may want to add this custom target as a dependency of of some
+application level targets using ``add_dependencies``.
 #]=======================================================================]
 function(ERPC_ADD_IDL_TARGET _IDL_FILE)
   cmake_parse_arguments(PARSE_ARGV 1 "_FUNC_NAMED_PARAMETERERS" "" "OUTPUT_DIR;TARGET_PREFIX;SEARCH_PATH" "LANGUAGES;GROUPS;SERVER_DEPENDS")
